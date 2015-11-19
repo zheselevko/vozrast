@@ -1,12 +1,16 @@
 $(document).ready(function(){
 	$('.slider').slider({
-		full_width: true,
+		full_width: false,
 		height: 671,
-		next: true,
+		indicators: true,
+		sliderNext: $('.prev')
 	});
+$('.next').click(function() {
+   $('.slider').slider('next');
+});
+$('.prev').click(function() {
+   $('.slider').slider('prev');
+});
+ $(".example").TimeCircles();
 
 });
-// Next slide
-$('.slider').slider('next');
-// Previous slide
-$('.slider').slider('prev');

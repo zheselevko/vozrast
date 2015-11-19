@@ -27,6 +27,118 @@
         .indicators
             z-index: 2
             bottom: 80px
+            width: 300px
+            left: 50%
+            margin-left: -150px
+            right: auto
+            .indicator-item
+                width: 22px
+                height: 22px
+                background-color: white
+            .active
+                background-color: #da0b63
+        li
+            .caption
+                top: 42%
+                +border-box
+                +clr
+                h3
+                    color: white
+                    font-family: BebasNeueBold
+                    font-size: 36px
+                    font-weight: 400
+                    line-height: 30px
+                h5
+                    color: #fefefe
+                    font-family: OriflameSans
+                    font-size: 30px
+                    font-weight: 400
+                    line-height: 36px
+                    margin-top: 60px
+        .prev
+            width: 18px
+            height: 30px
+            position: absolute
+            left: 50%
+            margin-left: -125px
+            bottom: 30px
+            z-index: 100
+            cursor: pointer
+            background: url("../img/left.png") 0 0 no-repeat
+        .next
+            width: 18px
+            height: 30px
+            position: absolute
+            right: 50%
+            margin-right: -125px
+            bottom: 30px
+            z-index: 100
+            cursor: pointer
+            +rotate(180deg)
+            background: url("../img/left.png") 0 0 no-repeat
+.action
+    width: 100%
+    +border-box
+    +clr
+    .container
+        padding: 45px 0
+        h5
+            color: #da0b63
+            font-family: BebasNeueBold
+            font-size: 36px
+            font-weight: 400
+            line-height: 24px
+            text-transform: uppercase
+            position: relative
+            margin-bottom: 45px
+            &:before
+                content: '~~~~~~~~ :: ~~~~~~~~'
+                position: absolute
+                left: 50%
+                bottom: 0
+                width: 165px
+                height: 9px
+                color: #da0a62
+                +OpenSans
+                font-size: 16px
+                font-weight: 400
+                line-height: 55px
+                margin-left: -80px
+        .col
+            h4
+                color: #6f7d8e
+                font-family: OriflameSans
+                font-weight: 400
+                line-height: 30px
+                text-transform: uppercase
+                font-size: 24px
+            h6
+                color: #6f7d8e
+                font-family: OriflameSans
+                font-weight: 400
+                line-height: 1
+                text-transform: uppercase
+                font-size: 16px
+                margin-bottom: 30px
+            .button
+                text-align: center
+                margin-bottom: 10px
+                .btn
+                    width: 188px
+                    height: 40px
+                    text-transform: none
+                    font-size: 18px
+                    font-weight: 400
+                    padding: 0 1rem
+            p
+                color: #6f7d8e
+                font-family: OriflameSans
+                font-size: 16px
+                font-weight: 400
+                line-height: 30px
+            [class^="icon-"]
+                margin-top: 50px
+
 .container
     +border-box
     +clr

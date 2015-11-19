@@ -3245,25 +3245,18 @@ $(document).ready(function(){
 
         // dynamically add indicators
         if (options.indicators) {
-          $indicators = $('<ul class="indicators"></ul>');
+          $indicators = $('<ul class="indicators"></ul>'); 
             $indicator.append($('<button class="previous">previous </button>'));
             $indicator.append($('<button class="next">next</button>')); 
           $slides.each(function( index ) {
             var $indicator = $('<li class="indicator-item"></li>');
-			var $indicator = $('<button class="previous">previous </button>');
-            var $indicator = $('<button class="next">next</button>'); 
-$('.previous').click(function() {
-			    moveToSlide($active_index-1);
-			});
-$('.next').click(function() {
-			    moveToSlide($active_index-1);
-			});
+
             // Handle clicks on indicators
             $indicator.click(function () {
               var $parent = $slider.parent();
               var curr_index = $parent.find($(this)).index();
               moveToSlide(curr_index);
-			
+
               // reset interval
               clearInterval($interval);
               $interval = setInterval(

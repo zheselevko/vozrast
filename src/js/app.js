@@ -1,5 +1,6 @@
 //= lib/jquery.js
 //= lib/slick.min.js
-//= bin/materialize.js
 //= slider.js
+//= carousel.js
+//= TimeCircles.js
 //= common.js
