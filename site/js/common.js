@@ -1,19 +1,12 @@
-$(document).ready(function() {
-	
-	// $(document).on("click", function(){
-	// 	$(".js-popup").hide();
-	// });
+$(document).ready(function(){
+	$('.slider').slider({
+		full_width: true,
+		height: 671,
+		next: true,
+	});
 
-	// function scrollFixedElements() {
-	//     var scroll_left = $(this).scrollLeft();
-	//     $(".fixed-element").css({
-	//         left: -scroll_left
-	//     });
-	// }
-	// scrollFixedElements();
-	// $(window).scroll(function(){
-	//     scrollFixedElements()
-	// });
-
-	console.log($('body').html());
 });
+// Next slide
+$('.slider').slider('next');
+// Previous slide
+$('.slider').slider('prev');

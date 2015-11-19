@@ -1,9 +1,37 @@
-// Normally mainpage styles
-// body
-// 	+s(coderiver)
-div
-	+r(1024)
-		display: block
-p
-	+r(1024)
-		background: red
+.out
+    flex: 1 0 auto
+    nav
+        height: 43px
+        line-height: 43px
+        .brand-logo
+            margin-top: -31px
+        ul
+            li
+                a
+                    +OriflameSans
+                    font-size: 25px
+                    font-weight: 400
+    .header__top
+        .container
+            padding: 15px 0
+.header
+    position: absolute
+    top: 0
+    left: 0
+    right: 0
+    z-index: 10
+.header__slider
+    height: 671px
+    .slider
+        height: 671px
+        .indicators
+            z-index: 2
+            bottom: 80px
+.container
+    +border-box
+    +clr
+.btn
+    color: white
+    font-family: OriflameSans
+    font-size: 18px
+    font-weight: 400

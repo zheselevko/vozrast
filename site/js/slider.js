@@ -78,7 +78,7 @@
         if (!$this.hasClass('fullscreen')) {
           if (options.indicators) {
             // Add height if indicators are present
-            $this.height(options.height + 40);
+            $this.height(options.height);
           }
           else {
             $this.height(options.height);
