@@ -688,954 +688,806 @@
         }
     }; // Plugin end
 }( jQuery ));
+/*!jQuery Knob*/
 /**
- * Basic structure: TC_Class is the public class that is returned upon being called
- * 
- * So, if you do
- *      var tc = $(".timer").TimeCircles();
- *      
- * tc will contain an instance of the public TimeCircles class. It is important to
- * note that TimeCircles is not chained in the conventional way, check the
- * documentation for more info on how TimeCircles can be chained.
- * 
- * After being called/created, the public TimerCircles class will then- for each element
- * within it's collection, either fetch or create an instance of the private class.
- * Each function called upon the public class will be forwarded to each instance
- * of the private classes within the relevant element collection
- **/
+ * Downward compatible, touchable dial
+ *
+ * Version: 1.2.0 (15/07/2012)
+ * Requires: jQuery v1.7+
+ *
+ * Copyright (c) 2012 Anthony Terrien
+ * Under MIT and GPL licenses:
+ *  http://www.opensource.org/licenses/mit-license.php
+ *  http://www.gnu.org/licenses/gpl.html
+ *
+ * Thanks to vor, eskimoblood, spiffistan, FabrizioC
+ */
 (function($) {
 
-    var useWindow = window;
-    
-    // From https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/keys
-    if (!Object.keys) {
-        Object.keys = (function() {
-            'use strict';
-            var hasOwnProperty = Object.prototype.hasOwnProperty,
-                    hasDontEnumBug = !({toString: null}).propertyIsEnumerable('toString'),
-                    dontEnums = [
-                        'toString',
-                        'toLocaleString',
-                        'valueOf',
-                        'hasOwnProperty',
-                        'isPrototypeOf',
-                        'propertyIsEnumerable',
-                        'constructor'
-                    ],
-                    dontEnumsLength = dontEnums.length;
+    /**
+     * Kontrol library
+     */
+    "use strict";
 
-            return function(obj) {
-                if (typeof obj !== 'object' && (typeof obj !== 'function' || obj === null)) {
-                    throw new TypeError('Object.keys called on non-object');
+    /**
+     * Definition of globals and core
+     */
+    var k = {}, // kontrol
+        max = Math.max,
+        min = Math.min;
+
+    k.c = {};
+    k.c.d = $(document);
+    k.c.t = function (e) {
+        return e.originalEvent.touches.length - 1;
+    };
+
+    /**
+     * Kontrol Object
+     *
+     * Definition of an abstract UI control
+     *
+     * Each concrete component must call this one.
+     * <code>
+     * k.o.call(this);
+     * </code>
+     */
+    k.o = function () {
+        var s = this;
+
+        this.o = null; // array of options
+        this.$ = null; // jQuery wrapped element
+        this.i = null; // mixed HTMLInputElement or array of HTMLInputElement
+        this.g = null; // 2D graphics context for 'pre-rendering'
+        this.v = null; // value ; mixed array or integer
+        this.cv = null; // change value ; not commited value
+        this.x = 0; // canvas x position
+        this.y = 0; // canvas y position
+        this.$c = null; // jQuery canvas element
+        this.c = null; // rendered canvas context
+        this.t = 0; // touches index
+        this.isInit = false;
+        this.fgColor = null; // main color
+        this.pColor = null; // previous color
+        this.dH = null; // draw hook
+        this.cH = null; // change hook
+        this.eH = null; // cancel hook
+        this.rH = null; // release hook
+
+        this.run = function () {
+            var cf = function (e, conf) {
+                var k;
+                for (k in conf) {
+                    s.o[k] = conf[k];
                 }
-
-                var result = [], prop, i;
-
-                for (prop in obj) {
-                    if (hasOwnProperty.call(obj, prop)) {
-                        result.push(prop);
-                    }
-                }
-
-                if (hasDontEnumBug) {
-                    for (i = 0; i < dontEnumsLength; i++) {
-                        if (hasOwnProperty.call(obj, dontEnums[i])) {
-                            result.push(dontEnums[i]);
-                        }
-                    }
-                }
-                return result;
+                s.init();
+                s._configure()
+                 ._draw();
             };
-        }());
-    }
-    
-    // Used to disable some features on IE8
-    var limited_mode = false;
-    var tick_duration = 200; // in ms
-    
-    var debug = (location.hash === "#debug");
-    function debug_log(msg) {
-        if (debug) {
-            console.log(msg);
-        }
-    }
 
-    var allUnits = ["Days", "Hours", "Minutes", "Seconds"];
-    var nextUnits = {
-        Seconds: "Minutes",
-        Minutes: "Hours",
-        Hours: "Days",
-        Days: "Years"
-    };
-    var secondsIn = {
-        Seconds: 1,
-        Minutes: 60,
-        Hours: 3600,
-        Days: 86400,
-        Months: 2678400,
-        Years: 31536000
-    };
+            if(this.$.data('kontroled')) return;
+            this.$.data('kontroled', true);
 
-    /**
-     * Converts hex color code into object containing integer values for the r,g,b use
-     * This function (hexToRgb) originates from:
-     * http://stackoverflow.com/questions/5623838/rgb-to-hex-and-hex-to-rgb
-     * @param {string} hex color code
-     */
-    function hexToRgb(hex) {
-        // Expand shorthand form (e.g. "03F") to full form (e.g. "0033FF")
-        var shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
-        hex = hex.replace(shorthandRegex, function(m, r, g, b) {
-            return r + r + g + g + b + b;
-        });
+            this.extend();
+            this.o = $.extend(
+                {
+                    // Config
+                    min : this.$.data('min') || 0,
+                    max : this.$.data('max') || 100,
+                    stopper : true,
+                    readOnly : this.$.data('readonly'),
 
-        var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-        return result ? {
-            r: parseInt(result[1], 16),
-            g: parseInt(result[2], 16),
-            b: parseInt(result[3], 16)
-        } : null;
-    }
-    
-    function isCanvasSupported() {
-        var elem = document.createElement('canvas');
-        return !!(elem.getContext && elem.getContext('2d'));
-    }
+                    // UI
+                    cursor : (this.$.data('cursor') === true && 30)
+                                || this.$.data('cursor')
+                                || 0,
+                    thickness : this.$.data('thickness') || 0.35,
+                    lineCap : this.$.data('linecap') || 'butt',
+                    width : this.$.data('width') || 62,
+                    height : this.$.data('height') || 62,
+                    displayInput : this.$.data('displayinput') == null || this.$.data('displayinput'),
+                    displayPrevious : this.$.data('displayprevious'),
+                    fgColor : this.$.data('fgcolor') || '#6f7d8e',
+                    inputColor: this.$.data('inputcolor') || this.$.data('fgcolor') || '#6f7d8e',
+                    inline : false,
+                    step : this.$.data('step') || 1,
 
-    /**
-     * Function s4() and guid() originate from:
-     * http://stackoverflow.com/questions/105034/how-to-create-a-guid-uuid-in-javascript
-     */
-    function s4() {
-        return Math.floor((1 + Math.random()) * 0x10000)
-                .toString(16)
-                .substring(1);
-    }
+                    // Hooks
+                    draw : null, // function () {}
+                    change : null, // function (value) {}
+                    cancel : null, // function () {}
+                    release : null // function (value) {}
+                }, this.o
+            );
 
-    /**
-     * Creates a unique id
-     * @returns {String}
-     */
-    function guid() {
-        return s4() + s4() + '-' + s4() + '-' + s4() + '-' +
-                s4() + '-' + s4() + s4() + s4();
-    }
+            // routing value
+            if(this.$.is('fieldset')) {
 
-    /**
-     * Array.prototype.indexOf fallback for IE8
-     * @param {Mixed} mixed
-     * @returns {Number}
-     */
-    if (!Array.prototype.indexOf) {
-        Array.prototype.indexOf = function(elt /*, from*/)
-        {
-            var len = this.length >>> 0;
+                // fieldset = array of integer
+                this.v = {};
+                this.i = this.$.find('input')
+                this.i.each(function(k) {
+                    var $this = $(this);
+                    s.i[k] = $this;
+                    s.v[k] = $this.val();
 
-            var from = Number(arguments[1]) || 0;
-            from = (from < 0)
-                    ? Math.ceil(from)
-                    : Math.floor(from);
-            if (from < 0)
-                from += len;
-
-            for (; from < len; from++)
-            {
-                if (from in this &&
-                        this[from] === elt)
-                    return from;
-            }
-            return -1;
-        };
-    }
-
-    function parse_date(str) {
-        var match = str.match(/^[0-9]{4}-[0-9]{2}-[0-9]{2}\s[0-9]{1,2}:[0-9]{2}:[0-9]{2}$/);
-        if (match !== null && match.length > 0) {
-            var parts = str.split(" ");
-            var date = parts[0].split("-");
-            var time = parts[1].split(":");
-            return new Date(date[0], date[1] - 1, date[2], time[0], time[1], time[2]);
-        }
-        // Fallback for different date formats
-        var d = Date.parse(str);
-        if (!isNaN(d))
-            return d;
-        d = Date.parse(str.replace(/-/g, '/').replace('T', ' '));
-        if (!isNaN(d))
-            return d;
-        // Cant find anything
-        return new Date();
-    }
-
-    function parse_times(diff, old_diff, total_duration, units, floor) {
-        var raw_time = {};
-        var raw_old_time = {};
-        var time = {};
-        var pct = {};
-        var old_pct = {};
-        var old_time = {};
-
-        var greater_unit = null;
-        for(var i = 0; i < units.length; i++) {
-            var unit = units[i];
-            var maxUnits;
-
-            if (greater_unit === null) {
-                maxUnits = total_duration / secondsIn[unit];
-            }
-            else {
-                maxUnits = secondsIn[greater_unit] / secondsIn[unit];
-            }
-
-            var curUnits = (diff / secondsIn[unit]);
-            var oldUnits = (old_diff / secondsIn[unit]);
-            
-            if(floor) {
-                if(curUnits > 0) curUnits = Math.floor(curUnits);
-                else curUnits = Math.ceil(curUnits);
-                if(oldUnits > 0) oldUnits = Math.floor(oldUnits);
-                else oldUnits = Math.ceil(oldUnits);
-            }
-            
-            if (unit !== "Days") {
-                curUnits = curUnits % maxUnits;
-                oldUnits = oldUnits % maxUnits;
-            }
-
-            raw_time[unit] = curUnits;
-            time[unit] = Math.abs(curUnits);
-            raw_old_time[unit] = oldUnits;
-            old_time[unit] = Math.abs(oldUnits);
-            pct[unit] = Math.abs(curUnits) / maxUnits;
-            old_pct[unit] = Math.abs(oldUnits) / maxUnits;
-
-            greater_unit = unit;
-        }
-
-        return {
-            raw_time: raw_time,
-            raw_old_time: raw_old_time,
-            time: time,
-            old_time: old_time,
-            pct: pct,
-            old_pct: old_pct
-        };
-    }
-
-    var TC_Instance_List = {};
-    function updateUsedWindow() {
-        if(typeof useWindow.TC_Instance_List !== "undefined") {
-            TC_Instance_List = useWindow.TC_Instance_List;
-        }
-        else {
-            useWindow.TC_Instance_List = TC_Instance_List;
-        }
-        initializeAnimationFrameHandler(useWindow);
-    };
-    
-    function initializeAnimationFrameHandler(w) {
-        var vendors = ['webkit', 'moz'];
-        for (var x = 0; x < vendors.length && !w.requestAnimationFrame; ++x) {
-            w.requestAnimationFrame = w[vendors[x] + 'RequestAnimationFrame'];
-            w.cancelAnimationFrame = w[vendors[x] + 'CancelAnimationFrame'];
-        }
-
-        if (!w.requestAnimationFrame || !w.cancelAnimationFrame) {
-            w.requestAnimationFrame = function(callback, element, instance) {
-                if (typeof instance === "undefined")
-                    instance = {data: {last_frame: 0}};
-                var currTime = new Date().getTime();
-                var timeToCall = Math.max(0, 16 - (currTime - instance.data.last_frame));
-                var id = w.setTimeout(function() {
-                    callback(currTime + timeToCall);
-                }, timeToCall);
-                instance.data.last_frame = currTime + timeToCall;
-                return id;
-            };
-            w.cancelAnimationFrame = function(id) {
-                clearTimeout(id);
-            };
-        }
-    };
-    
-
-    var TC_Instance = function(element, options) {
-        this.element = element;
-        this.container;
-        this.listeners = null;
-        this.data = {
-            paused: false,
-            last_frame: 0,
-            animation_frame: null,
-            interval_fallback: null,
-            timer: false,
-            total_duration: null,
-            prev_time: null,
-            drawn_units: [],
-            text_elements: {
-                Days: null,
-                Hours: null,
-                Minutes: null,
-                Seconds: null
-            },
-            attributes: {
-                canvas: null,
-                context: null,
-                item_size: null,
-                line_width: null,
-                radius: null,
-                outer_radius: null
-            },
-            state: {
-                fading: {
-                    Days: false,
-                    Hours: false,
-                    Minutes: false,
-                    Seconds: false
-                }
-            }
-        };
-
-        this.config = null;
-        this.setOptions(options);
-        this.initialize();
-    };
-
-    TC_Instance.prototype.clearListeners = function() {
-        this.listeners = { all: [], visible: [] };
-    };
-    
-    TC_Instance.prototype.addTime = function(seconds_to_add) {
-        if(this.data.attributes.ref_date instanceof Date) {
-            var d = this.data.attributes.ref_date;
-            d.setSeconds(d.getSeconds() + seconds_to_add);
-        }
-        else if(!isNaN(this.data.attributes.ref_date)) {
-            this.data.attributes.ref_date += (seconds_to_add * 1000);
-        }
-    };
-    
-    TC_Instance.prototype.initialize = function(clear_listeners) {
-        // Initialize drawn units
-        this.data.drawn_units = [];
-        for(var i = 0; i < Object.keys(this.config.time).length; i++) {
-            var unit = Object.keys(this.config.time)[i];
-            if (this.config.time[unit].show) {
-                this.data.drawn_units.push(unit);
-            }
-        }
-
-        // Avoid stacking
-        $(this.element).children('div.time_circles').remove();
-
-        if (typeof clear_listeners === "undefined")
-            clear_listeners = true;
-        if (clear_listeners || this.listeners === null) {
-            this.clearListeners();
-        }
-        this.container = $("<div>");
-        this.container.addClass('time_circles');
-        this.container.appendTo(this.element);
-        
-        // Determine the needed width and height of TimeCircles
-        var height = this.element.offsetHeight;
-        var width = this.element.offsetWidth;
-        if (height === 0)
-            height = $(this.element).height();
-        if (width === 0)
-            width = $(this.element).width();
-
-        if (height === 0 && width > 0)
-            height = width / this.data.drawn_units.length;
-        else if (width === 0 && height > 0)
-            width = height * this.data.drawn_units.length;
-        
-        // Create our canvas and set it to the appropriate size
-        var canvasElement = document.createElement('canvas');
-        canvasElement.width = width;
-        canvasElement.height = height;
-        
-        // Add canvas elements
-        this.data.attributes.canvas = $(canvasElement);
-        this.data.attributes.canvas.appendTo(this.container);
-        
-        // Check if the browser has browser support
-        var canvasSupported = isCanvasSupported();
-        // If the browser doesn't have browser support, check if explorer canvas is loaded
-        // (A javascript library that adds canvas support to browsers that don't have it)
-        if(!canvasSupported && typeof G_vmlCanvasManager !== "undefined") {
-            G_vmlCanvasManager.initElement(canvasElement);
-            limited_mode = true;
-            canvasSupported = true;
-        }
-        if(canvasSupported) {
-            this.data.attributes.context = canvasElement.getContext('2d');
-        }
-
-        this.data.attributes.item_size = Math.min(width / this.data.drawn_units.length, height);
-        this.data.attributes.line_width = this.data.attributes.item_size * this.config.fg_width;
-        this.data.attributes.radius = ((this.data.attributes.item_size * 0.8) - this.data.attributes.line_width) / 2;
-        this.data.attributes.outer_radius = this.data.attributes.radius + 0.5 * Math.max(this.data.attributes.line_width, this.data.attributes.line_width * this.config.bg_width);
-
-        // Prepare Time Elements
-        var i = 0;
-        for (var key in this.data.text_elements) {
-            if (!this.config.time[key].show)
-                continue;
-
-            var textElement = $("<div>");
-            textElement.addClass('textDiv_' + key);
-            textElement.css("top", Math.round(0.35 * this.data.attributes.item_size));
-            textElement.css("left", Math.round(i++ * this.data.attributes.item_size));
-            textElement.css("width", this.data.attributes.item_size);
-            textElement.appendTo(this.container);
-
-            var headerElement = $("<h4>");
-            headerElement.text(this.config.time[key].text); // Options
-            headerElement.css("font-size", Math.round(this.config.text_size * this.data.attributes.item_size));
-            headerElement.css("line-height", Math.round(this.config.text_size * this.data.attributes.item_size) + "px");
-            headerElement.appendTo(textElement);
-
-            var numberElement = $("<span>");
-            numberElement.css("font-size", Math.round(3 * this.config.text_size * this.data.attributes.item_size));
-            numberElement.css("line-height", Math.round(this.config.text_size * this.data.attributes.item_size) + "px");
-            numberElement.appendTo(textElement);
-
-            this.data.text_elements[key] = numberElement;
-        }
-
-        this.start();
-        if (!this.config.start) {
-            this.data.paused = true;
-        }
-        
-        // Set up interval fallback
-        var _this = this;
-        this.data.interval_fallback = useWindow.setInterval(function(){
-            _this.update.call(_this, true);
-        }, 100);
-    };
-
-    TC_Instance.prototype.update = function(nodraw) {
-        if(typeof nodraw === "undefined") {
-            nodraw = false;
-        }
-        else if(nodraw && this.data.paused) {
-            return;
-        }
-        
-        if(limited_mode) {
-            //Per unit clearing doesn't work in IE8 using explorer canvas, so do it in one time. The downside is that radial fade cant be used
-            this.data.attributes.context.clearRect(0, 0, this.data.attributes.canvas[0].width, this.data.attributes.canvas[0].hright);
-        }
-        var diff, old_diff;
-
-        var prevDate = this.data.prev_time;
-        var curDate = new Date();
-        this.data.prev_time = curDate;
-
-        if (prevDate === null)
-            prevDate = curDate;
-
-        // If not counting past zero, and time < 0, then simply draw the zero point once, and call stop
-        if (!this.config.count_past_zero) {
-            if (curDate > this.data.attributes.ref_date) {
-                for(var i = 0; i < this.data.drawn_units.length; i++) {
-                    var key = this.data.drawn_units[i];
-
-                    // Set the text value
-                    this.data.text_elements[key].text("0");
-                    var x = (i * this.data.attributes.item_size) + (this.data.attributes.item_size / 2);
-                    var y = this.data.attributes.item_size / 2;
-                    var color = this.config.time[key].color;
-                    this.drawArc(x, y, color, 0);
-                }
-                this.stop();
-                return;
-            }
-        }
-
-        // Compare current time with reference
-        diff = (this.data.attributes.ref_date - curDate) / 1000;
-        old_diff = (this.data.attributes.ref_date - prevDate) / 1000;
-
-        var floor = this.config.animation !== "smooth";
-
-        var visible_times = parse_times(diff, old_diff, this.data.total_duration, this.data.drawn_units, floor);
-        var all_times = parse_times(diff, old_diff, secondsIn["Years"], allUnits, floor);
-
-        var i = 0;
-        var j = 0;
-        var lastKey = null;
-
-        var cur_shown = this.data.drawn_units.slice();
-        for (var i in allUnits) {
-            var key = allUnits[i];
-
-            // Notify (all) listeners
-            if (Math.floor(all_times.raw_time[key]) !== Math.floor(all_times.raw_old_time[key])) {
-                this.notifyListeners(key, Math.floor(all_times.time[key]), Math.floor(diff), "all");
-            }
-
-            if (cur_shown.indexOf(key) < 0)
-                continue;
-
-            // Notify (visible) listeners
-            if (Math.floor(visible_times.raw_time[key]) !== Math.floor(visible_times.raw_old_time[key])) {
-                this.notifyListeners(key, Math.floor(visible_times.time[key]), Math.floor(diff), "visible");
-            }
-            
-            if(!nodraw) {
-                // Set the text value
-                this.data.text_elements[key].text(Math.floor(Math.abs(visible_times.time[key])));
-
-                var x = (j * this.data.attributes.item_size) + (this.data.attributes.item_size / 2);
-                var y = this.data.attributes.item_size / 2;
-                var color = this.config.time[key].color;
-
-                if (this.config.animation === "smooth") {
-                    if (lastKey !== null && !limited_mode) {
-                        if (Math.floor(visible_times.time[lastKey]) > Math.floor(visible_times.old_time[lastKey])) {
-                            this.radialFade(x, y, color, 1, key);
-                            this.data.state.fading[key] = true;
+                    $this.bind(
+                        'change'
+                        , function () {
+                            var val = {};
+                            val[k] = $this.val();
+                            s.val(val);
                         }
-                        else if (Math.floor(visible_times.time[lastKey]) < Math.floor(visible_times.old_time[lastKey])) {
-                            this.radialFade(x, y, color, 0, key);
-                            this.data.state.fading[key] = true;
-                        }
-                    }
-                    if (!this.data.state.fading[key]) {
-                        this.drawArc(x, y, color, visible_times.pct[key]);
-                    }
-                }
-                else {
-                    this.animateArc(x, y, color, visible_times.pct[key], visible_times.old_pct[key], (new Date()).getTime() + tick_duration);
-                }
-            }
-            lastKey = key;
-            j++;
-        }
-
-        // Dont request another update if we should be paused
-        if(this.data.paused || nodraw) {
-            return;
-        }
-        
-        // We need this for our next frame either way
-        var _this = this;
-        var update = function() {
-            _this.update.call(_this);
-        };
-
-        // Either call next update immediately, or in a second
-        if (this.config.animation === "smooth") {
-            // Smooth animation, Queue up the next frame
-            this.data.animation_frame = useWindow.requestAnimationFrame(update, _this.element, _this);
-        }
-        else {
-            // Tick animation, Don't queue until very slightly after the next second happens
-            var delay = (diff % 1) * 1000;
-            if (delay < 0)
-                delay = 1000 + delay;
-            delay += 50;
-
-            _this.data.animation_frame = useWindow.setTimeout(function() {
-                _this.data.animation_frame = useWindow.requestAnimationFrame(update, _this.element, _this);
-            }, delay);
-        }
-    };
-
-    TC_Instance.prototype.animateArc = function(x, y, color, target_pct, cur_pct, animation_end) {
-        if (this.data.attributes.context === null)
-            return;
-
-        var diff = cur_pct - target_pct;
-        if (Math.abs(diff) > 0.5) {
-            if (target_pct === 0) {
-                this.radialFade(x, y, color, 1);
-            }
-            else {
-                this.radialFade(x, y, color, 0);
-            }
-        }
-        else {
-            var progress = (tick_duration - (animation_end - (new Date()).getTime())) / tick_duration;
-            if (progress > 1)
-                progress = 1;
-
-            var pct = (cur_pct * (1 - progress)) + (target_pct * progress);
-            this.drawArc(x, y, color, pct);
-
-            //var show_pct =
-            if (progress >= 1)
-                return;
-            var _this = this;
-            useWindow.requestAnimationFrame(function() {
-                _this.animateArc(x, y, color, target_pct, cur_pct, animation_end);
-            }, this.element);
-        }
-    };
-
-    TC_Instance.prototype.drawArc = function(x, y, color, pct) {
-        if (this.data.attributes.context === null)
-            return;
-
-        var clear_radius = Math.max(this.data.attributes.outer_radius, this.data.attributes.item_size / 2);
-        if(!limited_mode) {
-            this.data.attributes.context.clearRect(
-                    x - clear_radius,
-                    y - clear_radius,
-                    clear_radius * 2,
-                    clear_radius * 2
                     );
-        }
-        
-        if (this.config.use_background) {
-            this.data.attributes.context.beginPath();
-            this.data.attributes.context.arc(x, y, this.data.attributes.radius, 0, 2 * Math.PI, false);
-            this.data.attributes.context.lineWidth = this.data.attributes.line_width * this.config.bg_width;
+                });
+                this.$.find('legend').remove();
 
-            // line color
-            this.data.attributes.context.strokeStyle = this.config.circle_bg_color;
-            this.data.attributes.context.stroke();
-        }
+            } else {
+                // input = integer
+                this.i = this.$;
+                this.v = this.$.val();
+                (this.v == '') && (this.v = this.o.min);
 
-        // Direction
-        var startAngle, endAngle, counterClockwise;
-        var defaultOffset = (-0.5 * Math.PI);
-        var fullCircle = 2 * Math.PI;
-        startAngle = defaultOffset + (this.config.start_angle / 360 * fullCircle);
-        var offset = (2 * pct * Math.PI);
-
-        if (this.config.direction === "Both") {
-            counterClockwise = false;
-            startAngle -= (offset / 2);
-            endAngle = startAngle + offset;
-        }
-        else {
-            if (this.config.direction === "Clockwise") {
-                counterClockwise = false;
-                endAngle = startAngle + offset;
+                this.$.bind(
+                    'change'
+                    , function () {
+                        s.val(s._validate(s.$.val()));
+                    }
+                );
             }
-            else {
-                counterClockwise = true;
-                endAngle = startAngle - offset;
+
+            (!this.o.displayInput) && this.$.hide();
+
+            this.$c = $('<canvas width="' +
+                            this.o.width + 'px" height="' +
+                            this.o.height + 'px"></canvas>');
+            this.c = this.$c[0].getContext("2d");
+
+            this.$
+                .wrap($('<div class="ctn" style="' +
+                        'width:' + this.o.width + 'px;height:' +
+                        this.o.height + 'px; margin-right: 20px;"></div>'))
+                .before(this.$c);
+
+            if (this.v instanceof Object) {
+                this.cv = {};
+                this.copy(this.v, this.cv);
+            } else {
+                this.cv = this.v;
             }
-        }
 
-        this.data.attributes.context.beginPath();
-        this.data.attributes.context.arc(x, y, this.data.attributes.radius, startAngle, endAngle, counterClockwise);
-        this.data.attributes.context.lineWidth = this.data.attributes.line_width;
+            this.$
+                .bind("configure", cf)
+                .parent()
+                .bind("configure", cf);
 
-        // line color
-        this.data.attributes.context.strokeStyle = color;
-        this.data.attributes.context.stroke();
+            this._listen()
+                ._configure()
+                ._xy()
+                .init();
+
+            this.isInit = true;
+
+            this._draw();
+
+            return this;
+        };
+
+        this._draw = function () {
+
+            // canvas pre-rendering
+            var d = true,
+                c = document.createElement('canvas');
+
+            c.width = s.o.width;
+            c.height = s.o.height;
+            s.g = c.getContext('2d');
+
+            s.clear();
+
+            s.dH
+            && (d = s.dH());
+
+            (d !== false) && s.draw();
+
+            s.c.drawImage(c, 0, 0);
+            c = null;
+        };
+
+        this._touch = function (e) {
+
+            var touchMove = function (e) {
+
+                var v = s.xy2val(
+                            e.originalEvent.touches[s.t].pageX,
+                            e.originalEvent.touches[s.t].pageY
+                            );
+
+                if (v == s.cv) return;
+
+                if (
+                    s.cH
+                    && (s.cH(v) === false)
+                ) return;
+
+
+                s.change(s._validate(v));
+                s._draw();
+            };
+
+            // get touches index
+            this.t = k.c.t(e);
+
+            // First touch
+            touchMove(e);
+
+            // Touch events listeners
+            k.c.d
+                .bind("touchmove.k", touchMove)
+                .bind(
+                    "touchend.k"
+                    , function () {
+                        k.c.d.unbind('touchmove.k touchend.k');
+
+                        if (
+                            s.rH
+                            && (s.rH(s.cv) === false)
+                        ) return;
+
+                        s.val(s.cv);
+                    }
+                );
+
+            return this;
+        };
+
+        this._mouse = function (e) {
+
+            var mouseMove = function (e) {
+                var v = s.xy2val(e.pageX, e.pageY);
+                if (v == s.cv) return;
+
+                if (
+                    s.cH
+                    && (s.cH(v) === false)
+                ) return;
+
+                s.change(s._validate(v));
+                s._draw();
+            };
+
+            // First click
+            mouseMove(e);
+
+            // Mouse events listeners
+            k.c.d
+                .bind("mousemove.k", mouseMove)
+                .bind(
+                    // Escape key cancel current change
+                    "keyup.k"
+                    , function (e) {
+                        if (e.keyCode === 27) {
+                            k.c.d.unbind("mouseup.k mousemove.k keyup.k");
+
+                            if (
+                                s.eH
+                                && (s.eH() === false)
+                            ) return;
+
+                            s.cancel();
+                        }
+                    }
+                )
+                .bind(
+                    "mouseup.k"
+                    , function (e) {
+                        k.c.d.unbind('mousemove.k mouseup.k keyup.k');
+
+                        if (
+                            s.rH
+                            && (s.rH(s.cv) === false)
+                        ) return;
+
+                        s.val(s.cv);
+                    }
+                );
+
+            return this;
+        };
+
+        this._xy = function () {
+            var o = this.$c.offset();
+            this.x = o.left;
+            this.y = o.top;
+            return this;
+        };
+
+        this._listen = function () {
+
+            if (!this.o.readOnly) {
+                this.$c
+                    .bind(
+                        "mousedown"
+                        , function (e) {
+                            e.preventDefault();
+                            s._xy()._mouse(e);
+                         }
+                    )
+                    .bind(
+                        "touchstart"
+                        , function (e) {
+                            e.preventDefault();
+                            s._xy()._touch(e);
+                         }
+                    );
+                this.listen();
+            } else {
+                this.$.attr('readonly', 'readonly');
+            }
+
+            return this;
+        };
+
+        this._configure = function () {
+
+            // Hooks
+            if (this.o.draw) this.dH = this.o.draw;
+            if (this.o.change) this.cH = this.o.change;
+            if (this.o.cancel) this.eH = this.o.cancel;
+            if (this.o.release) this.rH = this.o.release;
+
+            if (this.o.displayPrevious) {
+                this.pColor = this.h2rgba(this.o.fgColor, "0.4");
+                this.fgColor = this.h2rgba(this.o.fgColor, "0.6");
+            } else {
+                this.fgColor = this.o.fgColor;
+            }
+
+            return this;
+        };
+
+        this._clear = function () {
+            this.$c[0].width = this.$c[0].width;
+        };
+
+        this._validate = function(v) {
+            return (~~ (((v < 0) ? -0.5 : 0.5) + (v/this.o.step))) * this.o.step;
+        };
+
+        // Abstract methods
+        this.listen = function () {}; // on start, one time
+        this.extend = function () {}; // each time configure triggered
+        this.init = function () {}; // each time configure triggered
+        this.change = function (v) {}; // on change
+        this.val = function (v) {}; // on release
+        this.xy2val = function (x, y) {}; //
+        this.draw = function () {}; // on change / on release
+        this.clear = function () { this._clear(); };
+
+        // Utils
+        this.h2rgba = function (h, a) {
+            var rgb;
+            h = h.substring(1,7)
+            rgb = [parseInt(h.substring(0,2),16)
+                   ,parseInt(h.substring(2,4),16)
+                   ,parseInt(h.substring(4,6),16)];
+            return "rgba(" + rgb[0] + "," + rgb[1] + "," + rgb[2] + "," + a + ")";
+        };
+
+        this.copy = function (f, t) {
+            for (var i in f) { t[i] = f[i]; }
+        };
     };
 
-    TC_Instance.prototype.radialFade = function(x, y, color, from, key) {
-        // TODO: Make fade_time option
-        var rgb = hexToRgb(color);
-        var _this = this; // We have a few inner scopes here that will need access to our instance
 
-        var step = 0.2 * ((from === 1) ? -1 : 1);
-        var i;
-        for (i = 0; from <= 1 && from >= 0; i++) {
-            // Create inner scope so our variables are not changed by the time the Timeout triggers
-            (function() {
-                var delay = 50 * i;
-                var rgba = "rgba(" + rgb.r + ", " + rgb.g + ", " + rgb.b + ", " + (Math.round(from * 10) / 10) + ")";
-                useWindow.setTimeout(function() {
-                    _this.drawArc(x, y, rgba, 1);
-                }, delay);
-            }());
-            from += step;
-        }
-        if (typeof key !== undefined) {
-            useWindow.setTimeout(function() {
-                _this.data.state.fading[key] = false;
-            }, 50 * i);
-        }
+    /**
+     * k.Dial
+     */
+    k.Dial = function () {
+        k.o.call(this);
+
+        this.startAngle = null;
+        this.xy = null;
+        this.radius = null;
+        this.lineWidth = null;
+        this.cursorExt = null;
+        this.w2 = null;
+        this.PI2 = 2*Math.PI;
+
+        this.extend = function () {
+            this.o = $.extend(
+                {
+                    bgColor : this.$.data('bgcolor') || '#EEEEEE',
+                    angleOffset : this.$.data('angleoffset') || 0,
+                    angleArc : this.$.data('anglearc') || 360,
+                    inline : true
+                }, this.o
+            );
+        };
+
+        this.val = function (v) {
+            if (null != v) {
+                this.cv = this.o.stopper ? max(min(v, this.o.max), this.o.min) : v;
+                this.v = this.cv;
+                this.$.val(this.v);
+                this._draw();
+            } else {
+                return this.v;
+            }
+        };
+
+        this.xy2val = function (x, y) {
+            var a, ret;
+
+            a = Math.atan2(
+                        x - (this.x + this.w2)
+                        , - (y - this.y - this.w2)
+                    ) - this.angleOffset;
+
+            if(this.angleArc != this.PI2 && (a < 0) && (a > -0.5)) {
+                // if isset angleArc option, set to min if .5 under min
+                a = 0;
+            } else if (a < 0) {
+                a += this.PI2;
+            }
+
+            ret = ~~ (0.5 + (a * (this.o.max - this.o.min) / this.angleArc))
+                    + this.o.min;
+
+            this.o.stopper
+            && (ret = max(min(ret, this.o.max), this.o.min));
+
+            return ret;
+        };
+
+        this.listen = function () {
+            // bind MouseWheel
+            var s = this,
+                mw = function (e) {
+                            e.preventDefault();
+                            var ori = e.originalEvent
+                                ,deltaX = ori.detail || ori.wheelDeltaX
+                                ,deltaY = ori.detail || ori.wheelDeltaY
+                                ,v = parseInt(s.$.val()) + (deltaX>0 || deltaY>0 ? s.o.step : deltaX<0 || deltaY<0 ? -s.o.step : 0);
+
+                            if (
+                                s.cH
+                                && (s.cH(v) === false)
+                            ) return;
+
+                            s.val(v);
+                        }
+                , kval, to, m = 1, kv = {37:-s.o.step, 38:s.o.step, 39:s.o.step, 40:-s.o.step};
+
+            this.$
+                .bind(
+                    "keydown"
+                    ,function (e) {
+                        var kc = e.keyCode;
+
+                        // numpad support
+                        if(kc >= 96 && kc <= 105) {
+                            kc = e.keyCode = kc - 48;
+                        }
+
+                        kval = parseInt(String.fromCharCode(kc));
+
+                        if (isNaN(kval)) {
+
+                            (kc !== 13)         // enter
+                            && (kc !== 8)       // bs
+                            && (kc !== 9)       // tab
+                            && (kc !== 189)     // -
+                            && e.preventDefault();
+
+                            // arrows
+                            if ($.inArray(kc,[37,38,39,40]) > -1) {
+                                e.preventDefault();
+
+                                var v = parseInt(s.$.val()) + kv[kc] * m;
+
+                                s.o.stopper
+                                && (v = max(min(v, s.o.max), s.o.min));
+
+                                s.change(v);
+                                s._draw();
+
+                                // long time keydown speed-up
+                                to = window.setTimeout(
+                                    function () { m*=2; }
+                                    ,30
+                                );
+                            }
+                        }
+                    }
+                )
+                .bind(
+                    "keyup"
+                    ,function (e) {
+                        if (isNaN(kval)) {
+                            if (to) {
+                                window.clearTimeout(to);
+                                to = null;
+                                m = 1;
+                                s.val(s.$.val());
+                            }
+                        } else {
+                            // kval postcond
+                            (s.$.val() > s.o.max && s.$.val(s.o.max))
+                            || (s.$.val() < s.o.min && s.$.val(s.o.min));
+                        }
+
+                    }
+                );
+
+            this.$c.bind("mousewheel DOMMouseScroll", mw);
+            this.$.bind("mousewheel DOMMouseScroll", mw)
+        };
+
+        this.init = function () {
+
+            if (
+                this.v < this.o.min
+                || this.v > this.o.max
+            ) this.v = this.o.min;
+
+            this.$.val(this.v);
+            this.w2 = this.o.width / 2;
+            this.cursorExt = this.o.cursor / 100;
+            this.xy = this.w2;
+            this.lineWidth = this.xy * this.o.thickness;
+            this.lineCap = this.o.lineCap;
+            this.radius = this.xy - this.lineWidth / 2;
+
+            this.o.angleOffset
+            && (this.o.angleOffset = isNaN(this.o.angleOffset) ? 0 : this.o.angleOffset);
+
+            this.o.angleArc
+            && (this.o.angleArc = isNaN(this.o.angleArc) ? this.PI2 : this.o.angleArc);
+
+            // deg to rad
+            this.angleOffset = this.o.angleOffset * Math.PI / -180;
+            this.angleArc = this.o.angleArc * Math.PI / -180;
+
+            // compute start and end angles
+            this.startAngle = 1.5 * Math.PI + this.angleOffset;
+            this.endAngle = 1.5 * Math.PI + this.angleOffset + this.angleArc;
+
+            var s = max(
+                            String(Math.abs(this.o.max)).length
+                            , String(Math.abs(this.o.min)).length
+                            , 2
+                            ) + 2;
+
+            this.o.displayInput
+                && this.i.css({
+                        'width' : ((this.o.width / 2 + 4) >> 0) + 'px'
+                        ,'height' : ((this.o.width / 3) >> 0) + 'px'
+                        ,'position' : 'absolute'
+                        ,'vertical-align' : 'middle'
+                        ,'margin-top' : ((this.o.width / 3) >> 0) + 'px'
+                        ,'margin-left' : '-' + ((this.o.width * 3 / 4 + 2) >> 0) + 'px'
+                        ,'border' : 0
+                        ,'background' : 'none'
+                        ,'font' : 'bold ' + ((this.o.width / s) >> 0) + 'px Arial'
+                        ,'text-align' : 'center'
+                        ,'color' : this.o.inputColor || this.o.fgColor
+                        ,'padding' : '0px'
+                        ,'-webkit-appearance': 'none'
+                        })
+                || this.i.css({
+                        'width' : '0px'
+                        ,'visibility' : 'hidden'
+                        });
+        };
+
+        this.change = function (v) {
+			this.cv = v;
+            this.$.val(v);
+        };
+
+        this.angle = function (v) {
+            return (v - this.o.min) * this.angleArc / (this.o.max - this.o.min);
+        };
+
+        this.draw = function () {
+
+            var c = this.g,                 // context
+                a = this.angle(this.cv)    // Angle
+                , sat = this.startAngle     // Start angle
+                , eat = sat + a             // End angle
+                , sa, ea                    // Previous angles
+                , r = 1;
+
+            c.lineWidth = this.lineWidth;
+
+            c.lineCap = this.lineCap;
+
+            this.o.cursor
+                && (sat = eat - this.cursorExt)
+                && (eat = eat + this.cursorExt);
+
+            c.beginPath();
+                c.strokeStyle = this.o.bgColor;
+                c.arc(this.xy, this.xy, this.radius, this.endAngle, this.startAngle, true);
+            c.stroke();
+
+            if (this.o.displayPrevious) {
+                ea = this.startAngle + this.angle(this.v);
+                sa = this.startAngle;
+                this.o.cursor
+                    && (sa = ea - this.cursorExt)
+                    && (ea = ea + this.cursorExt);
+
+                c.beginPath();
+                    c.strokeStyle = this.pColor;
+                    c.arc(this.xy, this.xy, this.radius, sa, ea, false);
+                c.stroke();
+                r = (this.cv == this.v);
+            }
+
+            c.beginPath();
+                c.strokeStyle = r ? this.o.fgColor : this.fgColor ;
+                c.arc(this.xy, this.xy, this.radius, sat, eat, false);
+            c.stroke();
+        };
+
+        this.cancel = function () {
+            this.val(this.v);
+        };
     };
 
-    TC_Instance.prototype.timeLeft = function() {
-        if (this.data.paused && typeof this.data.timer === "number") {
-            return this.data.timer;
-        }
-        var now = new Date();
-        return ((this.data.attributes.ref_date - now) / 1000);
+    $.fn.dial = $.fn.knob = function (o) {
+        return this.each(
+            function () {
+                var d = new k.Dial();
+                d.o = o;
+                d.$ = $(this);
+                d.run();
+            }
+        ).parent();
     };
 
-    TC_Instance.prototype.start = function() {
-        useWindow.cancelAnimationFrame(this.data.animation_frame);
-        useWindow.clearTimeout(this.data.animation_frame)
+})(jQuery);
+/*!jQuery Circular CountDown*/
+/**
+ * Downward compatible
+ *
+ * Version: 1.0.0 (26/04/2013)
+ * Requires: jQuery v1.7+
+ *
+ * Copyright (c) 2013 Nikhil Navadiya
+ *
+ * Thanks to http://www.javascriptkit.com/
+ */
+(function($) {
+	$.fn.ccountdown = function(_yr, _m, _d, _t) {
+		var $this = this;
+		var _montharray = new Array("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+		var _today = new Date();
+		// calling function first time so that it wll setup remaining time
+		var _changeTime = function() {
+			var _today = new Date();
+			var _todayy = _today.getYear();
+			if (_todayy < 1000)
+				_todayy += 1900;
+			var _todaym = _today.getMonth();
+			var _todayd = _today.getDate();
+			var _todayh = _today.getHours();
+			var _todaymin = _today.getMinutes();
+			var _todaysec = _today.getSeconds();
+			_todaysec = "0" + _todaysec;
+			_todaysec = _todaysec.substr(_todaysec.length - 2);
+			var _todaystring = _montharray[_todaym] + " " + _todayd + ", " + _todayy + " " + _todayh + ":" + _todaymin + ":" + _todaysec;
+			var _futurestring = _montharray[_m - 1] + " " + _d + ", " + _yr + " " + _t;
+			/* calculation of remaining days, hrs, min, and secs */
+			_dd = Date.parse(_futurestring) - Date.parse(_todaystring);
+			_dday = Math.floor(_dd / (60 * 60 * 1000 * 24) * 1);
+			_dhour = Math.floor((_dd % (60 * 60 * 1000 * 24)) / (60 * 60 * 1000) * 1);
+			_dmin = Math.floor(((_dd % (60 * 60 * 1000 * 24)) % (60 * 60 * 1000)) / (60 * 1000) * 1);
+			_dsec = Math.floor((((_dd % (60 * 60 * 60 * 1000 * 24)) % (60 * 60 * 1000)) % (60 * 1000)) / 1000 * 1);
+			var el = $($this);
+			var $ss = el.find(".second"), $mm = el.find(".minute"), $hh = el.find(".hour"), $dd = el.find(".days");
+			$ss.val(_dsec).trigger("change");
+			$mm.val(_dmin).trigger("change");
+			$hh.val(_dhour).trigger("change");
+			$dd.val(_dday).trigger("change");
+		};
+		
+		_changeTime();
 
-        // Check if a date was passed in html attribute or jquery data
-        var attr_data_date = $(this.element).data('date');
-        if (typeof attr_data_date === "undefined") {
-            attr_data_date = $(this.element).attr('data-date');
-        }
-        if (typeof attr_data_date === "string") {
-            this.data.attributes.ref_date = parse_date(attr_data_date);
-        }
-        // Check if this is an unpause of a timer
-        else if (typeof this.data.timer === "number") {
-            if (this.data.paused) {
-                this.data.attributes.ref_date = (new Date()).getTime() + (this.data.timer * 1000);
-            }
-        }
-        else {
-            // Try to get data-timer
-            var attr_data_timer = $(this.element).data('timer');
-            if (typeof attr_data_timer === "undefined") {
-                attr_data_timer = $(this.element).attr('data-timer');
-            }
-            if (typeof attr_data_timer === "string") {
-                attr_data_timer = parseFloat(attr_data_timer);
-            }
-            if (typeof attr_data_timer === "number") {
-                this.data.timer = attr_data_timer;
-                this.data.attributes.ref_date = (new Date()).getTime() + (attr_data_timer * 1000);
-            }
-            else {
-                // data-timer and data-date were both not set
-                // use config date
-                this.data.attributes.ref_date = this.config.ref_date;
-            }
-        }
+		setInterval(_changeTime, 1000);
+	};
+})(jQuery);
+/**
 
-        // Start running
-        this.data.paused = false;
-        this.update.call(this);
-    };
+*/
 
-    TC_Instance.prototype.restart = function() {
-        this.data.timer = false;
-        this.start();
-    };
+$(function() {
+            $(".knob").knob({
+                /*change : function (value) {
+                    //console.log("change : " + value);
+                },
+                release : function (value) {
+                    console.log("release : " + value);
+                },
+                cancel : function () {
+                    console.log("cancel : " + this.value);
+                },*/
+                draw : function () {
 
-    TC_Instance.prototype.stop = function() {
-        if (typeof this.data.timer === "number") {
-            this.data.timer = this.timeLeft(this);
-        }
-        // Stop running
-        this.data.paused = true;
-        useWindow.cancelAnimationFrame(this.data.animation_frame);
-    };
+                    // "tron" case
+                    if(this.$.data('skin') == 'tron') {
 
-    TC_Instance.prototype.destroy = function() {
-        this.clearListeners();
-        this.stop();
-        useWindow.clearInterval(this.data.interval_fallback);
-        this.data.interval_fallback = null;
-        
-        this.container.remove();
-        $(this.element).removeAttr('data-tc-id');
-        $(this.element).removeData('tc-id');
-    };
+                        var a = this.angle(this.cv)  // Angle
+                            , sa = this.startAngle          // Previous start angle
+                            , sat = this.startAngle         // Start angle
+                            , ea                            // Previous end angle
+                            , eat = sat + a                 // End angle
+                            , r = true;
 
-    TC_Instance.prototype.setOptions = function(options) {
-        if (this.config === null) {
-            this.default_options.ref_date = new Date();
-            this.config = $.extend(true, {}, this.default_options);
-        }
-        $.extend(true, this.config, options);
+                        this.g.lineWidth = this.lineWidth;
 
-        // Use window.top if use_top_frame is true
-        if(this.config.use_top_frame) {
-            useWindow = window.top;
-        }
-        else {
-            useWindow = window;
-        }
-        updateUsedWindow();
-        
-        this.data.total_duration = this.config.total_duration;
-        if (typeof this.data.total_duration === "string") {
-            if (typeof secondsIn[this.data.total_duration] !== "undefined") {
-                // If set to Years, Months, Days, Hours or Minutes, fetch the secondsIn value for that
-                this.data.total_duration = secondsIn[this.data.total_duration];
-            }
-            else if (this.data.total_duration === "Auto") {
-                // If set to auto, total_duration is the size of 1 unit, of the unit type bigger than the largest shown
-                for(var i = 0; i < Object.keys(this.config.time).length; i++) {
-                    var unit = Object.keys(this.config.time)[i];
-                    if (this.config.time[unit].show) {
-                        this.data.total_duration = secondsIn[nextUnits[unit]];
-                        break;
+                        this.o.cursor
+                            && (sat = eat - 0.3)
+                            && (eat = eat + 0.3);
+
+                        if (this.o.displayPrevious) {
+                            ea = this.startAngle + this.angle(this.value);
+                            this.o.cursor
+                                && (sa = ea + 0.3)
+                                && (ea = ea - 0.3);
+                            this.g.beginPath();
+                            this.g.strokeStyle = this.previousColor;
+                            this.g.arc(this.xy, this.xy, this.radius - this.lineWidth, sa, ea, false);
+                            this.g.stroke();
+                        }
+
+                        this.g.beginPath();
+                        this.g.strokeStyle = r ? this.o.fgColor : this.fgColor ;
+                        this.g.arc(this.xy, this.xy, this.radius - this.lineWidth, sat, eat, false);
+                        this.g.stroke();
+
+                        this.g.lineWidth = 2;
+                        this.g.beginPath();
+                        this.g.strokeStyle = this.o.fgColor;
+                        this.g.arc(this.xy, this.xy, this.radius - this.lineWidth + 1 + this.lineWidth * 2 / 3, 0, 2 * Math.PI, false);
+                        this.g.stroke();
+
+                        return false;
                     }
                 }
-            }
-            else {
-                // If it's a string, but neither of the above, user screwed up.
-                this.data.total_duration = secondsIn["Years"];
-                console.error("Valid values for TimeCircles config.total_duration are either numeric, or (string) Years, Months, Days, Hours, Minutes, Auto");
-            }
-        }
-    };
+            });
 
-    TC_Instance.prototype.addListener = function(f, context, type) {
-        if (typeof f !== "function")
-            return;
-        if (typeof type === "undefined")
-            type = "visible";
-        this.listeners[type].push({func: f, scope: context});
-    };
-
-    TC_Instance.prototype.notifyListeners = function(unit, value, total, type) {
-        for (var i = 0; i < this.listeners[type].length; i++) {
-            var listener = this.listeners[type][i];
-            listener.func.apply(listener.scope, [unit, value, total]);
-        }
-    };
-
-    TC_Instance.prototype.default_options = {
-        ref_date: new Date(),
-        start: true,
-        animation: "smooth",
-        count_past_zero: true,
-        circle_bg_color: "#60686F",
-        use_background: true,
-        fg_width: 0.1,
-        bg_width: 1.2,
-        text_size: 0.07,
-        total_duration: "Auto",
-        direction: "Clockwise",
-        use_top_frame: false,
-        start_angle: 0,
-        time: {
-            Days: {
-                show: true,
-                text: "Days",
-                color: "#FC6"
-            },
-            Hours: {
-                show: true,
-                text: "Hours",
-                color: "#9CF"
-            },
-            Minutes: {
-                show: true,
-                text: "Minutes",
-                color: "#BFB"
-            },
-            Seconds: {
-                show: true,
-                text: "Seconds",
-                color: "#F99"
-            }
-        }
-    };
-
-    // Time circle class
-    var TC_Class = function(elements, options) {
-        this.elements = elements;
-        this.options = options;
-        this.foreach();
-    };
-
-    TC_Class.prototype.getInstance = function(element) {
-        var instance;
-
-        var cur_id = $(element).data("tc-id");
-        if (typeof cur_id === "undefined") {
-            cur_id = guid();
-            $(element).attr("data-tc-id", cur_id);
-        }
-        if (typeof TC_Instance_List[cur_id] === "undefined") {
-            var options = this.options;
-            var element_options = $(element).data('options');
-            if (typeof element_options === "string") {
-                element_options = JSON.parse(element_options);
-            }
-            if (typeof element_options === "object") {
-                options = $.extend(true, {}, this.options, element_options);
-            }
-            instance = new TC_Instance(element, options);
-            TC_Instance_List[cur_id] = instance;
-        }
-        else {
-            instance = TC_Instance_List[cur_id];
-            if (typeof this.options !== "undefined") {
-                instance.setOptions(this.options);
-            }
-        }
-        return instance;
-    };
-
-    TC_Class.prototype.addTime = function(seconds_to_add) {
-        this.foreach(function(instance) {
-            instance.addTime(seconds_to_add);
+            // Example of infinite knob, iPod click wheel
+            var v, up=0,down=0,i=0
+                ,$idir = $("div.idir")
+                ,$ival = $("div.ival")
+                ,incr = function() { i++; $idir.show().html("+").fadeOut(); $ival.html(i); }
+                ,decr = function() { i--; $idir.show().html("-").fadeOut(); $ival.html(i); };
+            $("input.infinite").knob(
+                                {
+                                min : 0
+                                , max : 20
+                                , stopper : false
+                                , change : function () {
+                                                if(v > this.cv){
+                                                    if(up){
+                                                        decr();
+                                                        up=0;
+                                                    }else{up=1;down=0;}
+                                                } else {
+                                                    if(v < this.cv){
+                                                        if(down){
+                                                            incr();
+                                                            down=0;
+                                                        }else{down=1;up=0;}
+                                                    }
+                                                }
+                                                v = this.cv;
+                                            }
+                                });
         });
-    };
-    
-    TC_Class.prototype.foreach = function(callback) {
-        var _this = this;
-        this.elements.each(function() {
-            var instance = _this.getInstance(this);
-            if (typeof callback === "function") {
-                callback(instance);
-            }
-        });
-        return this;
-    };
-
-    TC_Class.prototype.start = function() {
-        this.foreach(function(instance) {
-            instance.start();
-        });
-        return this;
-    };
-
-    TC_Class.prototype.stop = function() {
-        this.foreach(function(instance) {
-            instance.stop();
-        });
-        return this;
-    };
-
-    TC_Class.prototype.restart = function() {
-        this.foreach(function(instance) {
-            instance.restart();
-        });
-        return this;
-    };
-
-    TC_Class.prototype.rebuild = function() {
-        this.foreach(function(instance) {
-            instance.initialize(false);
-        });
-        return this;
-    };
-
-    TC_Class.prototype.getTime = function() {
-        return this.getInstance(this.elements[0]).timeLeft();
-    };
-
-    TC_Class.prototype.addListener = function(f, type) {
-        if (typeof type === "undefined")
-            type = "visible";
-        var _this = this;
-        this.foreach(function(instance) {
-            instance.addListener(f, _this.elements, type);
-        });
-        return this;
-    };
-
-    TC_Class.prototype.destroy = function() {
-        this.foreach(function(instance) {
-            instance.destroy();
-        });
-        return this;
-    };
-
-    TC_Class.prototype.end = function() {
-        return this.elements;
-    };
-
-    $.fn.TimeCircles = function(options) {
-        return new TC_Class(this, options);
-    };
-}(jQuery));
 $(document).ready(function(){
 	$('.slider').slider({
 		full_width: false,

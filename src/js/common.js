@@ -14,3 +14,4 @@ $('.prev').click(function() {
  $(".example").TimeCircles();
 
 });
+

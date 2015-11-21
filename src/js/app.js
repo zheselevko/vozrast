@@ -2,5 +2,7 @@
 //= lib/slick.min.js
 //= slider.js
 //= carousel.js
-//= TimeCircles.js
+//= jquery.knob.js
+//= jquery.ccountdown.js
+//= init.js
 //= common.js

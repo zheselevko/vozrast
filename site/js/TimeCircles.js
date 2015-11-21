@@ -72,7 +72,7 @@
 
     var allUnits = ["Days", "Hours", "Minutes", "Seconds"];
     var nextUnits = {
-        Seconds: "Minutes",
+        Seconds: "Секунд",
         Minutes: "Hours",
         Hours: "Days",
         Days: "Years"
@@ -815,22 +815,22 @@
         time: {
             Days: {
                 show: true,
-                text: "Days",
+                text: "Дней",
                 color: "#FC6"
             },
             Hours: {
                 show: true,
-                text: "Hours",
+                text: "Часов",
                 color: "#9CF"
             },
             Minutes: {
                 show: true,
-                text: "Minutes",
+                text: "Минут",
                 color: "#BFB"
             },
             Seconds: {
                 show: true,
-                text: "Seconds",
+                text: "Секунд",
                 color: "#F99"
             }
         }

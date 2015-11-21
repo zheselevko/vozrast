@@ -19,7 +19,7 @@ div, input, textarea, select, button, h1, h2, h3, h4, h5, h6, a, span, a:focus {
 ul, ol { list-style-type: none; }
 table { border-spacing: 0; border-collapse: collapse; width: 100%; }
 
-body { font-family: Arial, sans-serif; font-size: 12px; line-height: 1.4; display: -webkit-box; display: -webkit-flex; display: -ms-flexbox; display: flex; min-height: 100vh; -webkit-box-orient: vertical; -webkit-box-direction: normal; -webkit-flex-direction: column; -ms-flex-direction: column; flex-direction: column; }
+body { font-family: Arial, sans-serif; font-size: 12px; line-height: 1.4; }
 
 @font-face { font-family: OriflameSans; src: url("fonts/OriflameSans-Regular.eot"); src: url("fonts/OriflameSans-Regular.eot?#iefix") format("embedded-opentype"), url("fonts/OriflameSans-Regular.woff2") format("woff2"), url("fonts/OriflameSans-Regular.woff") format("woff"), url("fonts/OriflameSans-Regular.ttf") format("truetype"); font-weight: normal; font-style: normal; }
 @font-face { font-family: BebasNeueBold; src: url("fonts/BebasNeueBold.eot"); src: url("fonts/BebasNeueBold.eot?#iefix") format("embedded-opentype"), url("fonts/BebasNeueBold.woff2") format("woff2"), url("fonts/BebasNeueBold.woff") format("woff"), url("fonts/BebasNeueBold.ttf") format("truetype"); font-weight: normal; font-style: normal; }
@@ -35,6 +35,8 @@ body { font-family: Arial, sans-serif; font-size: 12px; line-height: 1.4; displa
 .icon-sepa:before { content: ""; }
 
 .icon-skrill:before { content: ""; }
+
+.icon-fst:before { content: ""; }
 
 .materialize-red.lighten-5 { background-color: #fdeaeb !important; }
 
@@ -3908,7 +3910,6 @@ button.picker__today:focus, button.picker__clear:focus, button.picker__close:foc
 .l .l-col1 { float: left; width: 20%; }
 .l .l-col2 { float: right; width: 70%; }
 
-.out { -webkit-box-flex: 1; -webkit-flex: 1 0 auto; -ms-flex: 1 0 auto; flex: 1 0 auto; }
 .out nav { height: 43px; line-height: 43px; }
 .out nav .brand-logo { margin-top: -31px; }
 .out nav ul li a { font-family: "OriflameSans", sans-serif; font-size: 25px; font-weight: 400; }
@@ -3939,6 +3940,42 @@ button.picker__today:focus, button.picker__clear:focus, button.picker__close:foc
 .action .container .col .button .btn, .action .container .col .button .btn-large { width: 188px; height: 40px; text-transform: none; font-size: 18px; font-weight: 400; padding: 0 1rem; }
 .action .container .col p { color: #6f7d8e; font-family: OriflameSans; font-size: 16px; font-weight: 400; line-height: 30px; }
 .action .container .col [class^="icon-"] { margin-top: 50px; }
+.action .container .col .ccounter { -webkit-box-sizing: border-box; box-sizing: border-box; *zoom: 1; padding: 20px 0 10px 0; }
+.action .container .col .ccounter:after { content: " "; display: table; clear: both; }
+.action .container .col .ccounter .ctn { float: left; }
+.action .container .col .ccounter input { color: #6f7d8e !important; font-family: Lato !important; font-size: 22px !important; font-weight: 700 !important; line-height: 20px !important; }
+.action .container .col .title { color: #6f7d8e; font-family: OriflameSans; font-size: 22px; font-weight: 400; line-height: 24px; margin-bottom: 25px; }
+.action .container .col .days { -webkit-box-sizing: border-box; box-sizing: border-box; *zoom: 1; }
+.action .container .col .days:after { content: " "; display: table; clear: both; }
+.action .container .col .days span { display: block; float: left; width: 62px; margin-right: 20px; text-align: center; color: #6f7d8e; font-family: OriflameSans; font-size: 12px; font-weight: 400; line-height: 24px; text-transform: uppercase; }
+
+.position { width: 100%; -webkit-box-sizing: border-box; box-sizing: border-box; *zoom: 1; background: #6f7d8e url("../img/pos_bg.png") repeat-x; }
+.position:after { content: " "; display: table; clear: both; }
+.position .container { padding: 37px 0; }
+.position .container h3 { color: white; font-family: BebasNeueBold; font-size: 36px; font-weight: 400; line-height: 24px; text-transform: uppercase; position: relative; margin-bottom: 110px; }
+.position .container h3:before { content: "~~~~~~~~ :: ~~~~~~~~"; position: absolute; left: 50%; bottom: 0; width: 240px; height: 9px; color: #fff; font-family: "Open Sans", sans-serif; font-size: 22px; font-weight: 400; line-height: 90px; margin-left: -120px; }
+.position .container .row { -webkit-box-sizing: border-box; box-sizing: border-box; *zoom: 1; }
+.position .container .row:after { content: " "; display: table; clear: both; }
+.position .container .row .s12 { margin-bottom: 50px; }
+.position .container .row .s12:last-child { margin-bottom: 15px; }
+.position .container .row .s12 .image { margin-bottom: 13px; }
+.position .container .row .s12 span { color: white; font-family: OriflameSans; font-size: 18px; font-weight: 400; line-height: 23px; }
+
+.quality .container { padding: 55px 0 0px 0; }
+.quality .container h3 { color: #da0b63; font-family: BebasNeueBold; font-size: 36px; font-weight: 400; line-height: 24px; text-transform: uppercase; position: relative; margin-bottom: 55px; }
+.quality .container h3:before { content: "~~~~~~~~ :: ~~~~~~~~"; position: absolute; left: 50%; bottom: 0; width: 165px; height: 9px; color: #da0a62; font-family: "Open Sans", sans-serif; font-size: 16px; font-weight: 400; line-height: 65px; margin-left: -80px; }
+.quality .container .row .s12 { height: 75px; margin-bottom: 30px; }
+.quality .container .row .s12 .valign-wrapper { height: 75px; }
+.quality .container .row .s12 .valign-wrapper .lft { margin-left: -15px; }
+.quality .container .row .s12 .valign-wrapper .s10 { color: #6f7d8e; font-family: OriflameSans; font-size: 17px; font-weight: 400; line-height: 18px; }
+
+.sale { width: 100%; -webkit-box-sizing: border-box; box-sizing: border-box; *zoom: 1; background-color: #90c22e; }
+.sale:after { content: " "; display: table; clear: both; }
+.sale .container { padding: 20px 0; }
+.sale .container h3 { color: white; font-family: BebasNeueBold; font-size: 36px; font-weight: 400; line-height: 24px; text-transform: uppercase; position: relative; margin-bottom: 75px; }
+.sale .container h3:before { content: "~~~~~~~~ :: ~~~~~~~~"; position: absolute; left: 50%; bottom: 0; width: 240px; height: 9px; color: #fff; font-family: "Open Sans", sans-serif; font-size: 22px; font-weight: 400; line-height: 90px; margin-left: -120px; }
+
+footer.page-footer { padding-top: 0; margin-top: 0; }
 
 .container { -webkit-box-sizing: border-box; box-sizing: border-box; *zoom: 1; }
 .container:after { content: " "; display: table; clear: both; }
