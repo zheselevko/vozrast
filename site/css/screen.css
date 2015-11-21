@@ -32,11 +32,19 @@ body { font-family: Arial, sans-serif; font-size: 12px; line-height: 1.4; }
 
 .icon, [class^="icon-"], [class*=" icon-"] { display: inline-block; }
 
+.icon-round:before { content: ""; }
+
 .icon-sepa:before { content: ""; }
 
 .icon-skrill:before { content: ""; }
 
-.icon-fst:before { content: ""; }
+.icon-ghost:before { content: ""; }
+
+.icon-manager:before { content: ""; }
+
+.icon-tel_mg:before { content: ""; }
+
+.icon-tachka:before { content: ""; }
 
 .materialize-red.lighten-5 { background-color: #fdeaeb !important; }
 
@@ -3971,9 +3979,35 @@ button.picker__today:focus, button.picker__clear:focus, button.picker__close:foc
 
 .sale { width: 100%; -webkit-box-sizing: border-box; box-sizing: border-box; *zoom: 1; background-color: #90c22e; }
 .sale:after { content: " "; display: table; clear: both; }
-.sale .container { padding: 20px 0; }
-.sale .container h3 { color: white; font-family: BebasNeueBold; font-size: 36px; font-weight: 400; line-height: 24px; text-transform: uppercase; position: relative; margin-bottom: 75px; }
+.sale .container { padding: 20px 0 75px 0; }
+.sale .container h3 { color: white; font-family: BebasNeueBold; font-size: 36px; font-weight: 400; line-height: 24px; text-transform: uppercase; position: relative; margin-bottom: 115px; }
 .sale .container h3:before { content: "~~~~~~~~ :: ~~~~~~~~"; position: absolute; left: 50%; bottom: 0; width: 240px; height: 9px; color: #fff; font-family: "Open Sans", sans-serif; font-size: 22px; font-weight: 400; line-height: 90px; margin-left: -120px; }
+.sale .container .row { position: relative; }
+.sale .container .row .s2 { margin-right: 54px; position: relative; }
+.sale .container .row .s2:nth-child(2n+1):last-child:before { display: none; }
+.sale .container .row .s2:nth-child(2n+1):before { content: ""; position: absolute; right: -80px; top: -20px; width: 100px; height: 27px; background: url("../img/line_t.png") 0 0 no-repeat; }
+.sale .container .row .s2:nth-child(2n):before { content: ""; position: absolute; right: -80px; bottom: -20px; width: 100px; height: 27px; background: url("../img/line_b.png") 0 0 no-repeat; }
+.sale .container .row .s2:last-child { margin-right: 0; }
+.sale .container .row .s2 span { color: white; font-family: OriflameSans; font-size: 14px; font-weight: 400; line-height: 14px; }
+
+.more { width: 100%; -webkit-box-sizing: border-box; box-sizing: border-box; *zoom: 1; }
+.more:after { content: " "; display: table; clear: both; }
+.more .container { padding: 90px 0; }
+.more .container .row .s12 { height: 86px; }
+.more .container .row .s12 .valign-wrapper { height: 86px; }
+.more .container .row .s12 .valign-wrapper .s8 { color: white; font-family: OriflameSans; font-size: 14px; font-weight: 400; line-height: 18px; }
+.more .container .row .s12 .valign-wrapper .s4 { height: 86px; }
+.more [class^="icon-"] { color: #fff; font-size: 84px; line-height: 84px; }
+.more .icon-tachka { margin-left: -40px; }
+
+.zakaz { width: 100%; -webkit-box-sizing: border-box; box-sizing: border-box; *zoom: 1; background: #fff url("../img/pattern.png") 0 0 no-repeat; }
+.zakaz:after { content: " "; display: table; clear: both; }
+.zakaz .container { width: 980px; padding: 55px 0; }
+.zakaz .container h3 { height: 30px; color: #da0b63; font-family: BebasNeueBold; font-size: 36px; font-weight: 400; line-height: 26px; text-transform: uppercase; position: relative; margin-bottom: 70px; }
+.zakaz .container h3:before { content: "~~~~~~~~ :: ~~~~~~~~"; position: absolute; left: 50%; bottom: 0; width: 165px; height: 9px; color: #7e8287; font-family: "Open Sans", sans-serif; font-size: 16px; font-weight: 400; line-height: 65px; margin-left: -80px; }
+.zakaz .container .s12 img { margin-left: 30px; }
+.zakaz .container .s3 { color: #da0b63; font-family: OriflameSans; font-size: 18px; font-weight: 400; line-height: 18px; }
+.zakaz .container .s3 span { display: block; color: #da0b63; font-family: OriflameSans; font-size: 18px; font-weight: 400; line-height: 26px; text-transform: uppercase; }
 
 footer.page-footer { padding-top: 0; margin-top: 0; }
 

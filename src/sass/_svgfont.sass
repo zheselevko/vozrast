@@ -5,9 +5,13 @@
 	font-weight: normal
 	font-style: normal
 
+$icon-round: "\EA01"
 $icon-sepa: "\EA02"
 $icon-skrill: "\EA03"
-$icon-fst: "\EA01"
+$icon-ghost: "\EA04"
+$icon-manager: "\EA05"
+$icon-tel_mg: "\EA06"
+$icon-tachka: "\EA07"
 
 
 %icon
@@ -24,9 +28,17 @@ $icon-fst: "\EA01"
 	@extend %icon
 	display: inline-block
 
+.icon-round:before
+	content: $icon-round
 .icon-sepa:before
 	content: $icon-sepa
 .icon-skrill:before
 	content: $icon-skrill
-.icon-fst:before
-	content: $icon-fst
+.icon-ghost:before
+	content: $icon-ghost
+.icon-manager:before
+	content: $icon-manager
+.icon-tel_mg:before
+	content: $icon-tel_mg
+.icon-tachka:before
+	content: $icon-tachka

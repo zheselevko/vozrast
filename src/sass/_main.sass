@@ -260,7 +260,7 @@
     +clr
     background-color: #90c22e
     .container
-        padding: 20px 0 
+        padding: 20px 0 75px 0
         h3
             color: white
             font-family: BebasNeueBold
@@ -269,7 +269,7 @@
             line-height: 24px
             text-transform: uppercase
             position: relative
-            margin-bottom: 75px
+            margin-bottom: 115px
             &:before
                 content: '~~~~~~~~ :: ~~~~~~~~'
                 position: absolute
@@ -283,6 +283,113 @@
                 font-weight: 400
                 line-height: 90px
                 margin-left: -120px
+        .row
+            position: relative
+            .s2
+                margin-right: 54px
+                position: relative
+                &:nth-child(2n+1)
+                    &:last-child
+                        &:before
+                            display: none
+                    &:before
+                        content: ''
+                        position: absolute
+                        right: -80px 
+                        top: -20px
+                        width: 100px
+                        height: 27px
+                        background: url("../img/line_t.png") 0 0 no-repeat
+                &:nth-child(2n)
+                    &:before
+                        content: ''
+                        position: absolute
+                        right: -80px 
+                        bottom: -20px
+                        width: 100px
+                        height: 27px
+                        background: url("../img/line_b.png") 0 0 no-repeat
+                &:last-child
+                    margin-right: 0
+                span
+                    color: white
+                    font-family: OriflameSans
+                    font-size: 14px
+                    font-weight: 400
+                    line-height: 14px
+.more
+    width: 100%
+    +border-box
+    +clr
+    .container
+        padding: 90px 0
+        .row
+            .s12
+                height: 86px
+                .valign-wrapper
+                    height: 86px
+                    .s8
+                        color: white
+                        font-family: OriflameSans
+                        font-size: 14px
+                        font-weight: 400
+                        line-height: 18px
+                    .s4
+                        height: 86px
+    [class^="icon-"]
+        color: #fff
+        font-size: 84px
+        line-height: 84px
+    .icon-tachka
+        margin-left: -40px
+.zakaz
+    width: 100%
+    +border-box
+    +clr
+    background: #fff url("../img/pattern.png") 0 0 no-repeat
+    .container
+        width: 980px
+        padding: 55px 0
+        h3
+            height: 30px
+            color: #da0b63
+            font-family: BebasNeueBold
+            font-size: 36px
+            font-weight: 400
+            line-height: 26px
+            text-transform: uppercase
+            position: relative
+            margin-bottom: 70px
+            &:before
+                content: '~~~~~~~~ :: ~~~~~~~~'
+                position: absolute
+                left: 50%
+                bottom: 0
+                width: 165px
+                height: 9px
+                color: #7e8287
+                +OpenSans
+                font-size: 16px
+                font-weight: 400
+                line-height: 65px
+                margin-left: -80px
+        .s12
+            img
+                margin-left: 30px
+        .s3
+            color: #da0b63
+            font-family: OriflameSans
+            font-size: 18px
+            font-weight: 400
+            line-height: 18px
+            span
+                display: block
+                color: #da0b63
+                font-family: OriflameSans
+                font-size: 18px
+                font-weight: 400
+                line-height: 26px
+                text-transform: uppercase
 footer.page-footer
     padding-top: 0
     margin-top: 0
